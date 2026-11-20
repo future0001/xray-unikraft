@@ -1,0 +1,47 @@
+name: Build and push xray-unikraft
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+      - name: Clone xray-core
+        run: |
+          git clone --depth 1 https://github.com/XTLS/Xray-core.git xray-core
+          git -C xray-core rev-parse HEAD
+      - name: Build xray and launcher as static PIE
+        run: |
+          cd xray-core
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=pie -trimpath -buildvcs=false -ldflags "-s -w -buildid= -linkmode=external -extldflags=-static-pie" -o ../xray ./main
+          cd ../launcher
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=pie -trimpath -buildvcs=false -ldflags "-s -w -buildid= -linkmode=external -extldflags=-static-pie" -o ../launcher .
+          cd ..
+          for b in xray launcher; do
+            file "$b"
+            readelf -h "$b" | grep -q 'Type:.*DYN' || { echo "$b is not a PIE executable"; exit 1; }
+            if ldd "$b" 2>&1 | grep -q '=>'; then echo "$b is dynamically linked"; exit 1; fi
+          done
+          echo "both binaries are static PIE"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: <redacted>
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/${{ github.repository_owner }}/xray-unikraft:latest
+      - name: Show image digest
+        run: echo "image digest: ${{ steps.build.outputs.digest }}"
