@@ -35,7 +35,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: <redacted>
+          password: ${{ secrets.GITHUB_TOKEN }}
       - id: build
         uses: docker/build-push-action@v6
         with:
@@ -44,4 +44,5 @@ jobs:
           platforms: linux/amd64
           tags: ghcr.io/${{ github.repository_owner }}/xray-unikraft:latest
       - name: Show image digest
-        run: echo "image digest: ${{ steps.build.outputs.digest }}"
+        run: |
+          echo "image digest: ${{ steps.build.outputs.digest }}"
