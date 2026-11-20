@@ -3,6 +3,6 @@
 # (Unikraft Cloud's loader requires position-independent binaries).
 FROM scratch
 COPY xray /xray
-COPY launcher /launcher
+COPY launcher-bin /launcher
 EXPOSE 8080
 ENTRYPOINT ["/launcher"]
