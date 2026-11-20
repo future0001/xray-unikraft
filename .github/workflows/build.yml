@@ -23,9 +23,9 @@ jobs:
           cd xray-core
           CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=pie -trimpath -buildvcs=false -ldflags "-s -w -buildid= -linkmode=external -extldflags=-static-pie" -o ../xray ./main
           cd ../launcher
-          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=pie -trimpath -buildvcs=false -ldflags "-s -w -buildid= -linkmode=external -extldflags=-static-pie" -o ../launcher .
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=pie -trimpath -buildvcs=false -ldflags "-s -w -buildid= -linkmode=external -extldflags=-static-pie" -o ../launcher-bin .
           cd ..
-          for b in xray launcher; do
+          for b in xray launcher-bin; do
             file "$b"
             readelf -h "$b" | grep -q 'Type:.*DYN' || { echo "$b is not a PIE executable"; exit 1; }
             if ldd "$b" 2>&1 | grep -q '=>'; then echo "$b is dynamically linked"; exit 1; fi
